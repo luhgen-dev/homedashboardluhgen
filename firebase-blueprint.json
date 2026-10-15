@@ -1,0 +1,123 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the Family Hub OS.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "partnerUid": { "type": "string", "description": "UID of the partner for shared visibility" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A financial transaction in Zone 2.",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "loggedBy": { "type": "string", "description": "UID of the user who logged it" },
+        "acknowledgedBy": { "type": "string", "description": "UID of the partner who acknowledged it" },
+        "status": { "type": "string", "enum": ["pending", "acknowledged"] },
+        "type": { "type": "string", "enum": ["expense", "income"] },
+        "receiptUrl": { "type": "string" }
+      },
+      "required": ["amount", "category", "date", "loggedBy", "status", "type"]
+    },
+    "OT_Shift": {
+      "title": "OT_Shift",
+      "description": "An overtime shift logged for the Strategic Bridge.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date-time" },
+        "hours": { "type": "number" },
+        "rateType": { "type": "string", "enum": ["weekday", "saturday", "sunday"] },
+        "loggedBy": { "type": "string" }
+      },
+      "required": ["date", "hours", "rateType", "loggedBy"]
+    },
+    "Mydin_Product": {
+      "title": "Mydin_Product",
+      "description": "A product in the Mydin catalog.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "previous_price": { "type": "number" },
+        "image_url": { "type": "string" },
+        "last_updated": { "type": "string", "format": "date-time" },
+        "frequency_score": { "type": "number" },
+        "is_active": { "type": "boolean" }
+      },
+      "required": ["name", "category", "price", "frequency_score", "is_active"]
+    },
+    "Cart_Item": {
+      "title": "Cart_Item",
+      "description": "An item in the active grocery cart.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "quantity": { "type": "number" },
+        "addedBy": { "type": "string" }
+      },
+      "required": ["productId", "name", "price", "quantity", "addedBy"]
+    },
+    "Kitchen_Log": {
+      "title": "Kitchen_Log",
+      "description": "A daily log of home-cooked meals and meal planning requests.",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "enum": ["planned", "requesting_suggestion", "suggestion_provided", "cooked"] },
+        "planned_date": { "type": "string", "format": "date" },
+        "protein_type": { "type": "string" },
+        "suggestion_deadline": { "type": "string", "format": "date-time" },
+        "fallback_meal": { "type": "string" },
+        "husband_suggestion": { "type": "string" },
+        "meal_name": { "type": "string" },
+        "image_url": { "type": "string" },
+        "notes": { "type": "string" },
+        "cooked_at": { "type": "string", "format": "date-time" },
+        "author_uid": { "type": "string" },
+        "reaction": { "type": "string" }
+      },
+      "required": ["status", "author_uid"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles."
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Shared household transactions."
+    },
+    "/ot_shifts/{shiftId}": {
+      "schema": { "$ref": "#/entities/OT_Shift" },
+      "description": "Logged overtime shifts."
+    },
+    "/mydin_catalog/{productId}": {
+      "schema": { "$ref": "#/entities/Mydin_Product" },
+      "description": "The Mydin product catalog."
+    },
+    "/active_cart/{cartItemId}": {
+      "schema": { "$ref": "#/entities/Cart_Item" },
+      "description": "The shared active grocery cart."
+    },
+    "/kitchen_logs/{logId}": {
+      "schema": { "$ref": "#/entities/Kitchen_Log" },
+      "description": "Stores daily meals cooked at home."
+    }
+  }
+}

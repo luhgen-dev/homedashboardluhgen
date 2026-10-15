@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+:root {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Architectural Glass Surface Effects */
+  .glass-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+    box-shadow: 
+      0 20px 40px -15px rgba(0, 0, 0, 0.5),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  .glass-card-active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(15, 23, 42, 0.4) 100%);
+    box-shadow: 
+      0 20px 45px -10px rgba(6, 182, 212, 0.2),
+      0 0 0 1px rgba(6, 182, 212, 0.35),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  .glass-dock {
+    background: linear-gradient(180deg, rgba(20, 26, 38, 0.65) 0%, rgba(10, 14, 22, 0.85) 100%);
+    box-shadow: 
+      0 25px 60px -15px rgba(0, 0, 0, 0.8),
+      0 0 0 1px rgba(255, 255, 255, 0.12),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+  }
+
+  .glass-pill {
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0.5px rgba(255, 255, 255, 0.25),
+      inset 0 -1px 0.5px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+}
+
+/* Ambient Weather Animations */
+.rain-container {
+  perspective: 1000px;
+}
+
+.rain-drop {
+  animation: fall linear infinite;
+  transform: rotate(15deg);
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-100px) rotate(15deg);
+  }
+  100% {
+    transform: translateY(120vh) rotate(15deg);
+  }
+}
+
+.star-twinkle {
+  animation: twinkle ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  0% {
+    opacity: 0.05;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scale(1.1);
+    box-shadow: 0 0 2px 0px rgba(255, 255, 255, 0.2);
+  }
+}

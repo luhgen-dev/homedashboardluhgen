@@ -1,0 +1,166 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() &&
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "luhgen@gmail.com" && request.auth.token.email_verified == true));
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+    
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+    }
+    
+    function uidNotModified() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+    
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+    
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+    
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'role', 'partnerUid']) &&
+             data.uid is string &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['admin', 'user'] &&
+             (!('displayName' in data) || data.displayName is string) &&
+             (!('photoURL' in data) || data.photoURL is string) &&
+             (!('partnerUid' in data) || data.partnerUid is string);
+    }
+    
+    function isValidTransaction(data) {
+      return hasOnlyAllowedFields(['amount', 'category', 'description', 'date', 'loggedBy', 'acknowledgedBy', 'status', 'type', 'receiptUrl']) &&
+             data.amount is number &&
+             data.category is string && data.category.size() < 100 &&
+             data.date is string &&
+             data.loggedBy is string && data.loggedBy.size() < 50 &&
+             data.status in ['pending', 'acknowledged'] &&
+             data.type in ['expense', 'income'] &&
+             (!('description' in data) || (data.description is string && data.description.size() < 500)) &&
+             (!('acknowledgedBy' in data) || (data.acknowledgedBy is string && data.acknowledgedBy.size() < 50)) &&
+             (!('receiptUrl' in data) || (data.receiptUrl is string && data.receiptUrl.size() < 1000));
+    }
+    
+    function isValidOTShift(data) {
+      return hasOnlyAllowedFields(['date', 'hours', 'rateType', 'loggedBy']) &&
+             data.date is string &&
+             data.hours is number && data.hours > 0 && data.hours <= 24 &&
+             data.rateType in ['weekday', 'saturday', 'sunday'] &&
+             data.loggedBy is string && data.loggedBy.size() < 50;
+    }
+    
+    function isValidMydinProduct(data) {
+      return hasOnlyAllowedFields(['name', 'category', 'price', 'previous_price', 'image_url', 'last_updated', 'frequency_score', 'is_active']) &&
+             data.name is string && data.name.size() < 200 &&
+             data.category is string && data.category.size() < 100 &&
+             data.price is number && data.price >= 0 &&
+             data.frequency_score is number && data.frequency_score >= 0 &&
+             data.is_active is bool &&
+             (!('previous_price' in data) || (data.previous_price is number && data.previous_price >= 0)) &&
+             (!('image_url' in data) || (data.image_url is string && data.image_url.size() < 1000)) &&
+             (!('last_updated' in data) || data.last_updated is string);
+    }
+    
+    function isValidCartItem(data) {
+      return hasOnlyAllowedFields(['productId', 'name', 'price', 'imageUrl', 'quantity', 'addedBy']) &&
+             data.productId is string && data.productId.size() < 100 &&
+             data.name is string && data.name.size() < 200 &&
+             data.price is number && data.price >= 0 &&
+             data.quantity is number && data.quantity > 0 &&
+             data.addedBy is string && data.addedBy.size() < 50 &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() < 1000));
+    }
+
+    function isValidKitchenLog(data) {
+      return hasOnlyAllowedFields(['status', 'planned_date', 'protein_type', 'suggestion_deadline', 'fallback_meal', 'husband_suggestion', 'meal_name', 'image_url', 'notes', 'cooked_at', 'author_uid', 'reaction']) &&
+             data.status in ['planned', 'requesting_suggestion', 'suggestion_provided', 'cooked'] &&
+             data.author_uid is string && data.author_uid.size() < 100 &&
+             (!('planned_date' in data) || data.planned_date is string) &&
+             (!('protein_type' in data) || (data.protein_type is string && data.protein_type.size() < 50)) &&
+             (!('suggestion_deadline' in data) || data.suggestion_deadline is string) &&
+             (!('fallback_meal' in data) || (data.fallback_meal is string && data.fallback_meal.size() < 200)) &&
+             (!('husband_suggestion' in data) || (data.husband_suggestion is string && data.husband_suggestion.size() < 500)) &&
+             (!('meal_name' in data) || (data.meal_name is string && data.meal_name.size() < 200)) &&
+             (!('cooked_at' in data) || data.cooked_at is string) &&
+             (!('image_url' in data) || (data.image_url is string && data.image_url.size() < 1000)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() < 1000)) &&
+             (!('reaction' in data) || (data.reaction is string && data.reaction.size() < 50));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && isOwner(userId) && uidUnchanged() && (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && isOwner(userId) && uidNotModified() && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+    
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidTransaction(request.resource.data) && request.resource.data.loggedBy == request.auth.uid;
+      allow update: if isAuthenticated() && isValidTransaction(request.resource.data) && 
+                    (request.resource.data.loggedBy == resource.data.loggedBy) && // loggedBy is immutable
+                    (request.auth.uid == resource.data.loggedBy || request.auth.uid == request.resource.data.acknowledgedBy);
+      allow delete: if isAuthenticated() && resource.data.loggedBy == request.auth.uid;
+    }
+    
+    match /ot_shifts/{shiftId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidOTShift(request.resource.data) && request.resource.data.loggedBy == request.auth.uid;
+      allow update: if isAuthenticated() && isValidOTShift(request.resource.data) && request.resource.data.loggedBy == resource.data.loggedBy && request.auth.uid == resource.data.loggedBy;
+      allow delete: if isAuthenticated() && resource.data.loggedBy == request.auth.uid;
+    }
+    
+    match /mydin_catalog/{productId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidMydinProduct(request.resource.data);
+      allow update: if isAuthenticated() && isValidMydinProduct(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    
+    match /active_cart/{cartItemId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidCartItem(request.resource.data);
+      allow update: if isAuthenticated() && isValidCartItem(request.resource.data);
+      allow delete: if isAuthenticated();
+    }
+
+    match /kitchen_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidKitchenLog(request.resource.data) && request.resource.data.author_uid == request.auth.uid;
+      allow update: if isAuthenticated() && isValidKitchenLog(request.resource.data) && 
+                    (request.resource.data.author_uid == resource.data.author_uid) && // author_uid is immutable
+                    (request.auth.uid == resource.data.author_uid || request.auth.uid != resource.data.author_uid); // Anyone can react
+      allow delete: if isAuthenticated() && resource.data.author_uid == request.auth.uid;
+    }
+  }
+}
